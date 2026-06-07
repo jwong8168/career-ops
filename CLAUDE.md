@@ -262,9 +262,23 @@ Default modes are in `modes/` (English). Additional language-specific modes are 
 
 ### CV Source of Truth
 
-- `cv.md` in project root is the canonical CV
+- **Canonical resume:** `~/Library/CloudStorage/GoogleDrive-jwong8168@gmail.com/My Drive/Documents/Jobs and Resumes/Resumes/2026/Wong Resume - May 2026_With_Professional_Summary.docx` — this is the formatted Word document with proper styling, fonts, and layout. Always use this as the base for tailored versions.
+- `cv.md` in project root is the **markdown mirror** for quick reference and CareerOps text analysis (scoring, keyword matching). Keep it in sync with the canonical .docx but it is NOT the source for generated resumes.
 - `article-digest.md` has detailed proof points (optional)
 - **NEVER hardcode metrics** -- read them from these files at evaluation time
+
+### Resume Tailoring Workflow
+
+When generating role-specific resumes:
+
+1. **Clone the canonical .docx** using `python-docx` — this preserves all Word formatting (fonts, styles, margins, bold/italic)
+2. **Make surgical edits** to specific paragraphs: Professional Summary, selected bullets in Takeda/BMC/earlier sections. Use `replace_para_text()` pattern (clear runs, set first run text) to preserve run-level formatting
+3. **Output both .docx and .pdf** — use `docx2pdf` (requires Word.app) for PDF conversion
+4. **Naming convention:** `Jason_Wong-{role-slug}-cv-{YYYY-MM-DD}.docx/.pdf`
+5. **All output goes to `output/`** — base resume also stored there as `Jason_Wong-Resume-{date}.docx/.pdf`
+6. See `config/profile.yml` for full output configuration
+
+**Do NOT** regenerate resumes from `cv.md` via pandoc — the formatting won't match the canonical resume.
 
 ---
 
