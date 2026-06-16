@@ -1086,6 +1086,206 @@ try {
   fail(`tracker-link normalization tests crashed: ${e.message}`);
 }
 
+// ── 15. GEMINI EVAL — pure scoring helpers (JGW-7) ──────────────
+
+console.log('\n15. Gemini eval — pure scoring helpers');
+
+try {
+  const gemini = await import(pathToFileURL(join(ROOT, 'gemini-eval.mjs')).href);
+
+  // Importing the module must NOT trigger the CLI (no process.exit, no API call).
+  // The presence of the exported helpers proves the import.meta.url guard let the
+  // module load as a library rather than running main().
+  if (
+    typeof gemini.buildSystemPrompt === 'function' &&
+    typeof gemini.parseScoreSummary === 'function' &&
+    typeof gemini.computeNextReportNumber === 'function' &&
+    typeof gemini.buildReportContent === 'function' &&
+    typeof gemini.slugifyCompany === 'function'
+  ) {
+    pass('gemini-eval.mjs imports as a library (CLI guarded, no side-effects on import)');
+  } else {
+    fail('gemini-eval.mjs did not export the expected pure helpers');
+  }
+
+  // ── buildSystemPrompt — prompt assembly ──
+  const prompt = gemini.buildSystemPrompt({
+    sharedContext: 'SHARED_MARKER',
+    ofertaLogic: 'OFERTA_MARKER',
+    cvContent: 'CV_MARKER',
+    profileYml: 'YML_MARKER',
+    profileContent: 'PROFILE_MARKER',
+  });
+  if (
+    prompt.includes('SHARED_MARKER') && prompt.includes('OFERTA_MARKER') &&
+    prompt.includes('CV_MARKER') && prompt.includes('YML_MARKER') &&
+    prompt.includes('PROFILE_MARKER')
+  ) {
+    pass('buildSystemPrompt interpolates all five context sections');
+  } else {
+    fail('buildSystemPrompt dropped one or more context sections');
+  }
+  if (
+    prompt.includes('---SCORE_SUMMARY---') &&
+    prompt.includes('---END_SUMMARY---') &&
+    prompt.includes('structured A-G scoring system')
+  ) {
+    pass('buildSystemPrompt preserves the machine-readable summary contract');
+  } else {
+    fail('buildSystemPrompt missing the SCORE_SUMMARY output contract');
+  }
+  // Pure: same inputs → identical output, and missing args default to ''
+  if (gemini.buildSystemPrompt({}) === gemini.buildSystemPrompt({})) {
+    pass('buildSystemPrompt is deterministic and tolerates missing args');
+  } else {
+    fail('buildSystemPrompt is not deterministic');
+  }
+
+  // ── parseScoreSummary — score / archetype / legitimacy extraction ──
+  const fullEval = [
+    'Block A...\nBlock G...',
+    '---SCORE_SUMMARY---',
+    'COMPANY: Acme Corp',
+    'ROLE: Senior AI Engineer',
+    'SCORE: 3.8',
+    'ARCHETYPE: The Builder',
+    'LEGITIMACY: High Confidence',
+    '---END_SUMMARY---',
+  ].join('\n');
+  const parsed = gemini.parseScoreSummary(fullEval);
+  if (
+    parsed.company === 'Acme Corp' && parsed.role === 'Senior AI Engineer' &&
+    parsed.score === '3.8' && parsed.archetype === 'The Builder' &&
+    parsed.legitimacy === 'High Confidence'
+  ) {
+    pass('parseScoreSummary extracts all five fields from a well-formed summary');
+  } else {
+    fail(`parseScoreSummary returned ${JSON.stringify(parsed)}`);
+  }
+
+  // Missing summary block → all defaults (company/role/archetype/legitimacy 'unknown', score '?')
+  const noSummary = gemini.parseScoreSummary('Just some prose with no summary block.');
+  if (
+    noSummary.company === 'unknown' && noSummary.role === 'unknown' &&
+    noSummary.score === '?' && noSummary.archetype === 'unknown' &&
+    noSummary.legitimacy === 'unknown'
+  ) {
+    pass('parseScoreSummary returns defaults when the summary block is absent');
+  } else {
+    fail(`parseScoreSummary defaults wrong: ${JSON.stringify(noSummary)}`);
+  }
+
+  // Partial block — present keys extracted, absent keys fall back to 'unknown'
+  const partial = gemini.parseScoreSummary(
+    '---SCORE_SUMMARY---\nCOMPANY: PartialCo\nSCORE: 2.1\n---END_SUMMARY---'
+  );
+  if (
+    partial.company === 'PartialCo' && partial.score === '2.1' &&
+    partial.role === 'unknown' && partial.archetype === 'unknown' &&
+    partial.legitimacy === 'unknown'
+  ) {
+    pass('parseScoreSummary handles a partial summary (present keys + unknown fallbacks)');
+  } else {
+    fail(`parseScoreSummary partial wrong: ${JSON.stringify(partial)}`);
+  }
+
+  // Indented summary lines are tolerated (trimStart before prefix match)
+  const indented = gemini.parseScoreSummary(
+    '---SCORE_SUMMARY---\n   COMPANY: Indented Inc\n   SCORE: 4.5\n---END_SUMMARY---'
+  );
+  if (indented.company === 'Indented Inc' && indented.score === '4.5') {
+    pass('parseScoreSummary tolerates leading whitespace on summary lines');
+  } else {
+    fail(`parseScoreSummary indentation handling wrong: ${JSON.stringify(indented)}`);
+  }
+
+  // Non-string input → defaults, no crash
+  const nonString = gemini.parseScoreSummary(null);
+  if (nonString.score === '?' && nonString.company === 'unknown') {
+    pass('parseScoreSummary returns defaults for non-string input (no crash)');
+  } else {
+    fail(`parseScoreSummary non-string wrong: ${JSON.stringify(nonString)}`);
+  }
+
+  // ── computeNextReportNumber ──
+  if (gemini.computeNextReportNumber([]) === '001') {
+    pass('computeNextReportNumber returns 001 for an empty directory');
+  } else {
+    fail(`computeNextReportNumber empty = ${gemini.computeNextReportNumber([])}`);
+  }
+  if (gemini.computeNextReportNumber(['001-a.md', '004-b.md', '002-c.md']) === '005') {
+    pass('computeNextReportNumber returns max+1, zero-padded to 3 digits');
+  } else {
+    fail(`computeNextReportNumber max+1 = ${gemini.computeNextReportNumber(['001-a.md', '004-b.md', '002-c.md'])}`);
+  }
+  if (gemini.computeNextReportNumber(['README.md', 'notes.txt', '007-real.md', 'draft.md']) === '008') {
+    pass('computeNextReportNumber ignores filenames without a 3-digit prefix');
+  } else {
+    fail(`computeNextReportNumber ignore-nonconforming = ${gemini.computeNextReportNumber(['README.md', '007-real.md'])}`);
+  }
+  if (gemini.computeNextReportNumber(['009-x.md']) === '010') {
+    pass('computeNextReportNumber pads the rollover from 009 to 010');
+  } else {
+    fail(`computeNextReportNumber pad = ${gemini.computeNextReportNumber(['009-x.md'])}`);
+  }
+
+  // ── slugifyCompany ──
+  if (gemini.slugifyCompany('My Acme & Co.') === 'my-acme-co') {
+    pass('slugifyCompany lowercases, collapses symbols, trims trailing hyphen');
+  } else {
+    fail(`slugifyCompany = ${gemini.slugifyCompany('My Acme & Co.')}`);
+  }
+  if (gemini.slugifyCompany('   Spaced  Out   ') === 'spaced-out') {
+    pass('slugifyCompany collapses internal/edge whitespace to single hyphens');
+  } else {
+    fail(`slugifyCompany spaced = ${gemini.slugifyCompany('   Spaced  Out   ')}`);
+  }
+
+  // ── buildReportContent — ${score}/5 output formatting ──
+  const report = gemini.buildReportContent({
+    company: 'Acme Corp',
+    role: 'Senior AI Engineer',
+    today: '2026-06-15',
+    archetype: 'The Builder',
+    score: '3.8',
+    legitimacy: 'High Confidence',
+    modelName: 'gemini-2.5-flash',
+    evaluationText: 'Body text.\n---SCORE_SUMMARY---\nSCORE: 3.8\n---END_SUMMARY---',
+  });
+  if (report.includes('**Score:** 3.8/5')) {
+    pass('buildReportContent formats the score as `${score}/5`');
+  } else {
+    fail('buildReportContent did not format the score as N/5');
+  }
+  if (
+    report.includes('# Evaluation: Acme Corp — Senior AI Engineer') &&
+    report.includes('**Archetype:** The Builder') &&
+    report.includes('**Legitimacy:** High Confidence') &&
+    report.includes('**Tool:** Gemini (gemini-2.5-flash)')
+  ) {
+    pass('buildReportContent renders the report header fields');
+  } else {
+    fail('buildReportContent header fields wrong');
+  }
+  if (report.includes('Body text.') && !report.includes('---SCORE_SUMMARY---')) {
+    pass('buildReportContent strips the SCORE_SUMMARY block from the appended body');
+  } else {
+    fail('buildReportContent did not strip the SCORE_SUMMARY block');
+  }
+
+  // ── formatScoreLine — console footer formatting ──
+  if (
+    gemini.formatScoreLine({ score: '3.8', archetype: 'The Builder', legitimacy: 'High Confidence' })
+      === '  Score: 3.8/5  |  Archetype: The Builder  |  Legitimacy: High Confidence'
+  ) {
+    pass('formatScoreLine renders the `Score: N/5 | Archetype | Legitimacy` footer');
+  } else {
+    fail('formatScoreLine output wrong');
+  }
+} catch (e) {
+  fail(`gemini-eval pure-helper tests crashed: ${e.message}`);
+}
+
 // ── SUMMARY ─────────────────────────────────────────────────────
 
 console.log('\n' + '='.repeat(50));
