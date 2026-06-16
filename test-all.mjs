@@ -64,9 +64,15 @@ for (const f of mjsFiles) {
 
 console.log('\n2. Script execution (graceful on empty data)');
 
+// Gate verify-pipeline against a committed fixture, NOT the user's gitignored
+// data/applications.md. Personal tracker formatting (bare scores, em-dash
+// placeholders, interim hand-entered statuses) must never turn the shared
+// suite red. Personal-data hygiene is a separate, non-gating concern run via
+// `node verify-pipeline.mjs` directly.
+const VERIFY_FIXTURE = join(ROOT, 'test/fixtures/applications.fixture.md');
 const scripts = [
   { name: 'cv-sync-check.mjs', expectExit: 1, allowFail: true }, // fails without cv.md (normal in repo)
-  { name: 'verify-pipeline.mjs', expectExit: 0 },
+  { name: 'verify-pipeline.mjs', expectExit: 0, env: { CAREER_OPS_TRACKER: VERIFY_FIXTURE } },
   { name: 'normalize-statuses.mjs', expectExit: 0 },
   { name: 'dedup-tracker.mjs', expectExit: 0 },
   { name: 'merge-tracker.mjs', expectExit: 0 },
@@ -74,8 +80,10 @@ const scripts = [
   { name: 'update-system.mjs check', expectExit: 0 },
 ];
 
-for (const { name, allowFail } of scripts) {
-  const result = run(NODE, name.split(' '), { stdio: ['pipe', 'pipe', 'pipe'] });
+for (const { name, allowFail, env } of scripts) {
+  const opts = { stdio: ['pipe', 'pipe', 'pipe'] };
+  if (env) opts.env = { ...process.env, ...env };
+  const result = run(NODE, name.split(' '), opts);
   if (result !== null) {
     pass(`${name} runs OK`);
   } else if (allowFail) {
