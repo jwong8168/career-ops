@@ -68,8 +68,12 @@ If the final score is >= 4.5, generate a draft of responses for the application 
 
 **Language**: Always in the language of the JD (EN default). Apply `/tech-translate`.
 
-## Step 5 — Update Tracker
+## Step 5 — Update Tracker (write TSV → MERGE → verify)
 
-Record it in `data/applications.md` with all columns including Report and PDF as ✅.
+Do NOT edit `applications.md` directly. Follow `_shared.md` ALWAYS rule 9 exactly:
+
+1. Write the addition as a canonical 9-column TSV to `batch/tracker-additions/` — order `num \t date \t company \t role \t status \t score \t pdf \t report \t notes`, with a canonical `status` (from `templates/states.yml`), `score` in `X.X/5` form, `pdf = ✅` when a tailored CV exists, and `num` = next tracker number past the current max (not the report number).
+2. **Run `node merge-tracker.mjs`** to merge into `data/applications.md`. This step is mandatory — the dashboard reads `applications.md`, not the TSVs. Skipping it means the evaluation never appears in CareerOps.
+3. **Verify** the merge summary shows `+1 added` (or `🔄 updated`). If it shows `defaulting to "Evaluated"` warnings or a corrupted score, fix the TSV format and re-run.
 
 **If any step fails**, continue with the next ones and mark the failed step as pending in the tracker.

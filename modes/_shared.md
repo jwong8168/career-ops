@@ -112,7 +112,16 @@ After detecting archetype, read `modes/_profile.md` for the user's specific fram
 7. Be direct and actionable -- no fluff
 8. Native tech English for generated text. Short sentences, action verbs, no passive voice.
 8b. Case study URLs in PDF Professional Summary (recruiter may only read this).
-9. **Tracker additions as TSV** -- NEVER edit applications.md directly. Write TSV in `batch/tracker-additions/`.
+9. **Tracker additions as TSV — then ALWAYS merge.** NEVER edit applications.md directly. Write the TSV to `batch/tracker-additions/`, **then immediately run `node merge-tracker.mjs`** to merge it into `data/applications.md`. The dashboard reads `applications.md`, NOT the TSVs — an unmerged TSV is invisible work. An evaluation is not "tracked" until the merge runs. Verify with the merge summary (`+N added`).
+   - **Canonical TSV format (9 tab-separated columns, exact order):**
+     `num \t date \t company \t role \t status \t score \t pdf \t report \t notes`
+     - `num` = next tracker number (one past the current max in applications.md — NOT the report number; they are different sequences). Check `grep -c '^| [0-9]' data/applications.md` or the merge log's `max #`.
+     - `status` = a canonical state from `templates/states.yml` ONLY: `Evaluated`, `Applied`, `Responded`, `Interview`, `Offer`, `Rejected`, `Discarded`, `SKIP`. No suffixes ("TOP PICK", "CV Tailored", etc. → these silently default to `Evaluated`). A skip verdict (<3.5 / domain wall) = `SKIP`.
+     - `score` = `X.X/5` format WITH the `/5` suffix (bare `3.6` breaks the score/status auto-detect heuristic and corrupts both fields).
+     - `pdf` = `✅` if a tailored CV was generated, else `—`.
+     - `report` = `[NNN](reports/NNN-...md)` link.
+     - `notes` = single line, NO `|` characters (breaks the md table). End with `[Listing](url)`.
+   - Run `node merge-tracker.mjs --dry-run` first if adding many rows; confirm `+N added, 0 corrupted` before the real merge.
 10. **Include `**URL:**` in every report header.**
 
 ### Tools

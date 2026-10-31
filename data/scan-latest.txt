@@ -1,0 +1,46 @@
+
+> career-ops@1.8.1 scan
+> node scan.mjs
+
+Scanning 78 companies via providers (4 skipped — no provider matched)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Portal Scan — 2026-10-31
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Companies scanned:     78
+Total jobs found:      3192
+Filtered by title:     3055 removed
+Filtered by location:  0 removed
+Duplicates:            129 skipped
+New offers added:      8
+
+Errors (14):
+  ✗ Takeda: HTTP 422
+  ✗ Google (DeepMind): HTTP 404
+  ✗ Spring Health: HTTP 404
+  ✗ Transcarent: HTTP 404
+  ✗ 10x Genomics: HTTP 404
+  ✗ BioHired (Pharma Aggregator): HTTP 403
+  ✗ Veeva Systems: This operation was aborted
+  ✗ Included Health: This operation was aborted
+  ✗ PointClickCare: This operation was aborted
+  ✗ LifeStance Health: This operation was aborted
+  ✗ Everlywell: This operation was aborted
+  ✗ Karius: This operation was aborted
+  ✗ AstraZeneca: This operation was aborted
+  ✗ Johnson & Johnson: This operation was aborted
+
+New offers:
+  + Syner-G | Project Manager | Raleigh, North Carolina, United States
+  + AcuityMD | Senior Platform Product Manager | Boston or Remote
+  + IQVIA | Local Clinical Project Manager | Lisbon, Portugal
+  + Ambience Healthcare | Chief of Staff, Office of the President | San Francisco
+  + AbbVie | Program Manager, MES  | Barceloneta, Barceloneta
+  + AbbVie | Program Manager, MES | Worcester, MA
+  + AbbVie | Director, Program Management Strategic Capital Project (North Carolina) | Durham, NC
+  + AbbVie | Project Manager, Marketing Operations - Patient Services | Mettawa, IL
+
+Results saved to data/pipeline.md and data/scan-history.tsv
+
+→ Run /career-ops pipeline to evaluate new offers.
+→ Share results and get help: https://discord.gg/8pRpHETxa4

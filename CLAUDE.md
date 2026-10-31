@@ -265,6 +265,9 @@ Default modes are in `modes/` (English). Additional language-specific modes are 
 - **Canonical resume:** `~/Library/CloudStorage/GoogleDrive-jwong8168@gmail.com/My Drive/Documents/Jobs and Resumes/Resumes/2026/Wong Resume - May 2026_With_Professional_Summary.docx` — this is the formatted Word document with proper styling, fonts, and layout. Always use this as the base for tailored versions.
 - `cv.md` in project root is the **markdown mirror** for quick reference and CareerOps text analysis (scoring, keyword matching). Keep it in sync with the canonical .docx but it is NOT the source for generated resumes.
 - `article-digest.md` has detailed proof points (optional)
+- **Two working resumes (June 2026):** Jason maintains two current resumes with the **same content in different formats** — reference whichever layout fits the target role/portal:
+  - Format A ("Day and Night"): `/Users/jasonwong/Documents/My WongVault (OSync)/300_Resources/1_📄 Jobs and Resumes/Resumes/2026/Drafts/Day and Night Resume/Jason Wong Resume June_10_2026.pdf`
+  - Format B (Core/Final): `/Users/jasonwong/Documents/My WongVault (OSync)/300_Resources/1_📄 Jobs and Resumes/Resumes/2026/Final Versions/Core Resumes (Final)/Jason_Wong_Resume_2026_June_01_2026.pdf`
 - **NEVER hardcode metrics** -- read them from these files at evaluation time
 
 ### Resume Tailoring Workflow
